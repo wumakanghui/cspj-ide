@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101725" />
+  <meta name="description" content="算法工坊：面向 CSP-J 与算法竞赛学习的在线 C++17 编译器。" />
+  <title>算法工坊 · CSP-J 在线 C++ IDE</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2368d6ac'/%3E%3Cpath d='M25 19 12 32l13 13M39 19l13 13-13 13M36 14 28 50' fill='none' stroke='%23101725' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
+  <style>
+    :root {
+      --bg: #101725;
+      --panel: #151e2d;
+      --panel-2: #192436;
+      --panel-3: #1d293c;
+      --line: #2a374a;
+      --line-soft: rgba(144, 164, 190, .13);
+      --text: #e8eef7;
+      --muted: #91a0b6;
+      --dim: #62728a;
+      --mint: #68d6ac;
+      --mint-strong: #36bd8d;
+      --mint-wash: rgba(104, 214, 172, .12);
+      --red: #ff8585;
+      --yellow: #f1c879;
+      --blue: #82b8ff;
+      --radius: 12px;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    body { background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 13px; }
+    button, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+    .app { height: 100vh; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+    .topbar { height: 68px; flex: 0 0 68px; display: flex; align-items: center; gap: 18px; padding: 0 22px; background: #121b29; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 246px; }
+    .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: var(--mint); color: #10221d; box-shadow: 0 5px 20px rgba(104,214,172,.14); }
+    .brand-mark svg { width: 24px; height: 24px; }
+    .brand-copy { display: flex; flex-direction: column; gap: 3px; }
+    .brand-title { letter-spacing: .2px; font-size: 15px; line-height: 1; font-weight: 760; }
+    .brand-subtitle { font-size: 10px; color: var(--muted); letter-spacing: .65px; }
+    .top-divider { width: 1px; height: 28px; background: var(--line); }
+    .project-label { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
+    .project-name { font-weight: 650; font-size: 13px; }
+    .project-sub { color: var(--muted); font-size: 11px; }
+    .header-spacer { flex: 1; }
+    .api-badge { display: inline-flex; align-items: center; gap: 7px; color: #bed2cb; background: rgba(104,214,172,.08); border: 1px solid rgba(104,214,172,.18); padding: 7px 10px; border-radius: 7px; font-size: 11px; white-space: nowrap; }
+    .dot { width: 6px; height: 6px; background: var(--mint); border-radius: 50%; box-shadow: 0 0 0 3px rgba(104,214,172,.1); }
+    .btn { border: 1px solid var(--line); border-radius: 8px; background: #1a2536; color: var(--text); height: 36px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; transition: background .15s, border-color .15s, transform .15s; }
+    .btn:hover { background: #243147; border-color: #43536b; }
+    .btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+    .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+    .btn-ghost:hover { color: var(--text); background: var(--panel-3); border-color: transparent; }
+    .btn-run { min-width: 106px; color: #10251f; background: var(--mint); border-color: var(--mint); font-weight: 750; box-shadow: 0 4px 16px rgba(104,214,172,.12); }
+    .btn-run:hover { background: #85e6c0; border-color: #85e6c0; }
+    .btn-run:disabled { opacity: .62; cursor: wait; }
+    .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 60px minmax(360px, 1fr) 355px; }
+    .rail { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 17px 0; background: #121b29; border-right: 1px solid var(--line); }
+    .rail-btn { position: relative; height: 40px; width: 40px; display: grid; place-items: center; background: transparent; color: #8090a7; border: 0; border-radius: 10px; }
+    .rail-btn svg { width: 19px; height: 19px; }
+    .rail-btn:hover { color: var(--text); background: var(--panel-3); }
+    .rail-btn.active { color: var(--mint); background: var(--mint-wash); }
+    .rail-btn.active::before { position: absolute; content: ""; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 4px 4px 0; background: var(--mint); }
+    .rail-spacer { flex: 1; }
+    .editor-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #121a27; border-right: 1px solid var(--line); }
+    .filebar { height: 45px; flex: 0 0 45px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--line-soft); background: #141d2b; }
+    .file-tab { align-self: stretch; min-width: 130px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--mint); padding: 0 10px; color: #e9f0fa; font-size: 12px; }
+    .cpp-icon { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; background: rgba(130,184,255,.15); color: var(--blue); font-size: 9px; font-weight: 800; }
+    .save-state { color: var(--dim); font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+    .save-state svg { width: 13px; height: 13px; }
+    .toolbar { height: 48px; flex: 0 0 48px; padding: 0 17px; display: flex; align-items: center; gap: 9px; background: #151e2d; border-bottom: 1px solid var(--line-soft); }
+    .language-chip { color: #9bbcf0; background: rgba(130,184,255,.09); border: 1px solid rgba(130,184,255,.17); border-radius: 6px; padding: 5px 8px; font-size: 11px; font-weight: 700; }
+    .toolbar-label { color: var(--muted); font-size: 11px; margin-left: 5px; }
+    .select-wrap { position: relative; display: inline-flex; align-items: center; }
+    .select-wrap select { appearance: none; min-width: 110px; padding: 7px 27px 7px 10px; border: 1px solid var(--line); border-radius: 7px; color: #d9e3f1; background: #1b2637; font-size: 11px; outline-offset: 1px; }
+    .select-wrap svg { pointer-events: none; position: absolute; right: 8px; width: 12px; height: 12px; color: var(--muted); }
+    .toolbar-spacer { flex: 1; }
+    .toolbar-hint { font-size: 10px; color: var(--dim); }
+    .editor-host { min-height: 0; flex: 1; position: relative; background: #171f2c; }
+    #code { height: 100%; width: 100%; resize: none; border: 0; outline: 0; padding: 17px 18px; color: #e0e8f3; background: #171f2c; font: 13px/1.68 "JetBrains Mono", Consolas, "SFMono-Regular", monospace; tab-size: 4; white-space: pre; }
+    .CodeMirror { height: 100%; background: #171f2c; color: #d9e4f1; font: 13px/1.7 "JetBrains Mono", Consolas, "SFMono-Regular", monospace; }
+    .CodeMirror-gutters { background: #151d29; border-right: 1px solid #263246; }
+    .CodeMirror-linenumber { color: #52627a; padding: 0 12px 0 8px; }
+    .CodeMirror-cursor { border-left: 2px solid var(--mint) !important; }
+    .CodeMirror-selected { background: rgba(104,214,172,.17) !important; }
+    .editor-status { height: 27px; flex: 0 0 27px; display: flex; align-items: center; gap: 15px; padding: 0 16px; font-size: 10px; color: #73839b; background: #141d2a; border-top: 1px solid var(--line-soft); }
+    .editor-status .status-right { margin-left: auto; }
+    .right-panel { display: grid; grid-template-rows: minmax(220px, 37%) minmax(270px, 1fr); min-width: 0; min-height: 0; background: var(--panel); }
+    .input-section { display: flex; flex-direction: column; min-height: 0; border-bottom: 1px solid var(--line); }
+    .section-head { height: 47px; flex: 0 0 47px; display: flex; align-items: center; gap: 8px; padding: 0 15px; border-bottom: 1px solid var(--line-soft); }
+    .section-icon { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 7px; color: var(--blue); background: rgba(130,184,255,.1); }
+    .section-icon svg { width: 14px; height: 14px; }
+    .section-title { font-weight: 720; font-size: 12px; }
+    .section-caption { color: var(--dim); font-size: 10px; margin-left: 3px; }
+    .section-spacer { flex: 1; }
+    .mini-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: transparent; color: var(--muted); border: 0; font-size: 10px; padding: 5px 6px; border-radius: 5px; }
+    .mini-btn:hover { color: var(--text); background: var(--panel-3); }
+    .mini-btn svg { width: 12px; height: 12px; }
+    .input-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 14px 10px; gap: 7px; }
+    .input-note { color: var(--dim); font-size: 10px; }
+    #stdin { width: 100%; min-height: 70px; flex: 1; resize: none; border: 1px solid #2c3a4e; border-radius: 8px; outline: 0; background: #111a27; color: #dce8f5; padding: 10px 11px; font: 12px/1.65 "JetBrains Mono", Consolas, monospace; tab-size: 4; }
+    #stdin:focus { border-color: rgba(104,214,172,.6); }
+    #stdin::placeholder { color: #52627a; }
+    .input-footer { display: flex; align-items: center; justify-content: space-between; color: var(--dim); font-size: 10px; }
+    .kbd { display: inline-flex; align-items: center; gap: 3px; color: #9eacc0; border: 1px solid #354258; border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px; font-family: inherit; font-size: 10px; }
+    .output-section { display: flex; flex-direction: column; min-height: 0; }
+    .output-head { justify-content: space-between; }
+    .output-left { display: flex; align-items: center; gap: 8px; }
+    .output-tabs { display: flex; gap: 15px; height: 100%; align-items: stretch; margin-left: 8px; }
+    .output-tab { position: relative; border: 0; background: transparent; color: var(--muted); padding: 0 2px; font-size: 11px; }
+    .output-tab.active { color: var(--text); font-weight: 700; }
+    .output-tab.active::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; border-radius: 2px; background: var(--mint); }
+    .run-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border-radius: 5px; color: var(--muted); background: #202b3d; font-size: 10px; white-space: nowrap; }
+    .run-pill::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #78869a; }
+    .run-pill.running { color: var(--yellow); background: rgba(241,200,121,.1); }
+    .run-pill.running::before { background: var(--yellow); animation: pulse 1s ease-in-out infinite; }
+    .run-pill.success { color: var(--mint); background: rgba(104,214,172,.1); }
+    .run-pill.success::before { background: var(--mint); }
+    .run-pill.error { color: var(--red); background: rgba(255,133,133,.1); }
+    .run-pill.error::before { background: var(--red); }
+    @keyframes pulse { 50% { opacity: .3; } }
+    .output-meta { display: flex; align-items: center; gap: 8px; padding: 10px 15px 0; color: var(--dim); font-size: 10px; }
+    .output-content { flex: 1; min-height: 0; position: relative; padding: 10px 15px 16px; overflow: auto; }
+    .output-pane { display: none; min-height: 100%; }
+    .output-pane.active { display: block; }
+    .output-text { margin: 0; color: #dbe5f1; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 "JetBrains Mono", Consolas, monospace; }
+    .output-text.placeholder { color: #61718a; }
+    .output-text.error-text { color: #ffb0a7; }
+    .output-text .unused { color: var(--muted); }
+    .output-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 170px; text-align: center; color: #61718a; gap: 10px; }
+    .output-empty svg { width: 29px; height: 29px; opacity: .5; }
+    .output-empty strong { color: #8d9bb0; font-size: 12px; font-weight: 600; }
+    .output-empty span { font-size: 10px; }
+    .footer { height: 25px; flex: 0 0 25px; display: flex; align-items: center; gap: 15px; padding: 0 13px; background: #0e1520; border-top: 1px solid #273144; color: #73839b; font-size: 10px; }
+    .footer-left, .footer-right { display: flex; align-items: center; gap: 7px; }
+    .footer-right { margin-left: auto; }
+    .footer .tiny-dot { width: 5px; height: 5px; background: var(--mint); border-radius: 50%; }
+    .toast { position: fixed; z-index: 20; left: 50%; bottom: 42px; transform: translate(-50%, 12px); background: #253247; border: 1px solid #3b4a61; color: var(--text); padding: 10px 14px; border-radius: 9px; box-shadow: 0 10px 35px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; font-size: 12px; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .loading-label { color: var(--yellow); }
+    .app.light-mode { --bg: #f2f5f9; --panel: #ffffff; --panel-2: #f7f9fc; --panel-3: #edf2f8; --line: #d9e1eb; --line-soft: rgba(76,94,119,.13); --text: #1d2939; --muted: #61718a; --dim: #7c8ba0; color-scheme: light; background: var(--bg); }
+    .light-mode .topbar, .light-mode .rail, .light-mode .editor-panel, .light-mode .filebar, .light-mode .toolbar, .light-mode .editor-status { background: #f9fbfd; }
+    .light-mode .brand-mark { color: #10221d; }
+    .light-mode .btn { background: #fff; color: var(--text); }
+    .light-mode .btn-run { background: var(--mint); color: #10251f; }
+    .light-mode .btn-ghost { background: transparent; color: var(--muted); }
+    .light-mode .select-wrap select { color: var(--text); background: #fff; }
+    .light-mode .file-tab { color: var(--text); }
+    .light-mode .editor-host { background: #fff; }
+    .light-mode #code { background: #fff; color: #243246; }
+    .light-mode #stdin { color: #243246; background: #f9fbfd; border-color: var(--line); }
+    .light-mode .section-head { border-color: var(--line-soft); }
+    .light-mode .footer { background: #e9eef5; border-color: var(--line); }
+    .light-mode .run-pill { background: #edf2f8; }
+    .light-mode .CodeMirror { background: #fff; color: #243246; }
+    .light-mode .CodeMirror-gutters { background: #f5f7fb; border-color: #e2e8f0; }
+    .light-mode .CodeMirror-linenumber { color: #9aa7b8; }
+    .light-mode .output-text { color: #253246; }
+    .light-mode .output-text.placeholder { color: #8b99ab; }
+    .light-mode .output-text.error-text { color: #bd3e37; }
+    .light-mode .output-empty strong { color: #61718a; }
+    @media (max-width: 1050px) {
+      .workspace { grid-template-columns: 54px minmax(300px, 1fr) 320px; }
+      .topbar { padding: 0 13px; gap: 11px; }
+      .brand { min-width: 205px; }
+      .project-label, .top-divider { display: none; }
+      .toolbar-hint { display: none; }
+    }
+    @media (max-width: 800px) {
+      html, body { height: auto; min-height: 100%; overflow: auto; }
+      .app { height: auto; min-height: 100vh; }
+      .topbar { position: sticky; top: 0; z-index: 10; height: 62px; flex-basis: 62px; }
+      .brand { min-width: 0; }
+      .brand-subtitle, .api-badge, #themeBtn, #downloadBtn { display: none; }
+      .header-spacer { min-width: 0; }
+      .workspace { flex: initial; display: grid; grid-template-columns: 44px minmax(0,1fr); grid-template-rows: minmax(490px, 66vh) auto; min-height: 0; }
+      .rail { grid-column: 1; grid-row: 1 / span 2; }
+      .editor-panel { grid-column: 2; grid-row: 1; }
+      .right-panel { grid-column: 2; grid-row: 2; display: grid; grid-template-rows: 260px 350px; border-top: 1px solid var(--line); }
+      .footer { position: sticky; bottom: 0; z-index: 5; }
+      .save-state { display: none; }
+      .toolbar { padding: 0 10px; gap: 6px; }
+      .select-wrap select { min-width: 90px; max-width: 116px; }
+      .filebar { padding: 0 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="app" id="appRoot">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5-6 7 6 7M16 5l6 7-6 7M14 3l-4 18"/></svg>
+      </div>
+      <div class="brand-copy">
+        <div class="brand-title">算法工坊</div>
+        <div class="brand-subtitle">ALGORITHM WORKSHOP · CSP-J</div>
+      </div>
+    </div>
+    <div class="top-divider"></div>
+    <div class="project-label">
+      <div class="project-name">在线代码实验室</div>
+      <div class="project-sub">专注算法 · 即写即运行</div>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="api-badge" title="编译和运行由外部服务完成"><span class="dot"></span><span id="apiState">远程编译服务</span></div>
+    <button class="btn btn-ghost" id="themeBtn" title="切换明暗主题" aria-label="切换明暗主题">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+    </button>
+    <button class="btn" id="downloadBtn" title="下载当前代码为 main.cpp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg><span>导出代码</span>
+    </button>
+    <button class="btn btn-run" id="runBtn" title="运行代码 (Ctrl+Enter)">
+      <svg id="runIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.8c0-.8.9-1.3 1.6-.9l11 7.1a1.2 1.2 0 0 1 0 2L8.6 20.1c-.7.4-1.6-.1-1.6-.9V4.8Z"/></svg><span id="runBtnText">运行代码</span>
+    </button>
+  </header>
+
+  <div class="workspace">
+    <nav class="rail" aria-label="工具栏">
+      <button class="rail-btn active" title="代码编辑器" aria-label="代码编辑器">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16"/></svg>
+      </button>
+      <button class="rail-btn" id="templateRailBtn" title="选择代码模板" aria-label="选择代码模板">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 11h8M8 15h8M8 7h5"/></svg>
+      </button>
+      <button class="rail-btn" id="inputRailBtn" title="跳转到标准输入" aria-label="跳转到标准输入">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3m6 0h4"/></svg>
+      </button>
+      <div class="rail-spacer"></div>
+      <button class="rail-btn" id="helpBtn" title="使用说明" aria-label="使用说明">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 4.5 1.5c-1 .9-2.1 1.2-2.1 2.8m0 3h.01"/></svg>
+      </button>
+    </nav>
+
+    <section class="editor-panel" aria-label="代码编辑器">
+      <div class="filebar">
+        <div class="file-tab"><span class="cpp-icon">C++</span><span>main.cpp</span><span style="color:var(--dim);font-size:10px">●</span></div>
+        <div class="save-state" id="saveState">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 9.5 17 19 7.5"/></svg><span>已自动保存到本机</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <span class="language-chip">C++</span>
+        <span class="toolbar-label">编译器</span>
+        <div class="select-wrap">
+          <select id="compilerSelect" aria-label="选择编译器"><option value="gcc-head">GCC（自动选择）</option></select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 10 5 5 5-5"/></svg>
+        </div>
+        <div class="select-wrap">
+          <select id="standardSelect" aria-label="选择 C++ 标准">
+            <option value="gnu++17" selected>GNU C++17</option>
+            <option value="gnu++14">GNU C++14</option>
+            <option value="gnu++20">GNU C++20</option>
+            <option value="gnu++11">GNU C++11</option>
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 10 5 5 5-5"/></svg>
+        </div>
+        <div class="toolbar-spacer"></div>
+        <span class="toolbar-hint">Ctrl + Enter 运行</span>
+      </div>
+      <div class="editor-host" id="editorHost">
+        <textarea id="code" spellcheck="false" aria-label="C++ 源代码">#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int a, b;
+    cin >> a >> b;
+    cout << a + b << '\n';
+
+    return 0;
+}</textarea>
+      </div>
+      <div class="editor-status">
+        <span id="cursorPos">行 1，列 1</span><span>UTF-8</span><span>空格：4</span><span>C++</span>
+        <span class="status-right" id="editorStatusText">本地自动保存已开启</span>
+      </div>
+    </section>
+
+    <aside class="right-panel" aria-label="输入与输出">
+      <section class="input-section">
+        <div class="section-head">
+          <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3m6 0h4"/></svg></div>
+          <span class="section-title">标准输入</span><span class="section-caption">stdin</span>
+          <div class="section-spacer"></div>
+          <button class="mini-btn" id="clearInputBtn" title="清空输入"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg>清空</button>
+        </div>
+        <div class="input-body">
+          <div class="input-note">在这里输入程序需要读取的数据，效果相当于评测时的输入文件。</div>
+          <textarea id="stdin" spellcheck="false" aria-label="标准输入" placeholder="例如：\n2 3">2 3
+</textarea>
+          <div class="input-footer"><span>每次运行都会使用这里的内容</span><span class="kbd">stdin</span></div>
+        </div>
+      </section>
+      <section class="output-section">
+        <div class="section-head output-head">
+          <div class="output-left">
+            <div class="section-icon" style="color:var(--mint);background:var(--mint-wash)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM8 9l3 3-3 3m6 0h3"/></svg></div>
+            <div class="output-tabs">
+              <button class="output-tab active" data-tab="output">运行结果</button>
+              <button class="output-tab" data-tab="diagnostics">编译信息</button>
+            </div>
+          </div>
+          <span class="run-pill" id="runPill">等待运行</span>
+        </div>
+        <div class="output-meta"><span id="outputTime">尚未运行</span><span>·</span><span id="outputCompiler">GNU C++17</span><div class="section-spacer"></div><button class="mini-btn" id="copyOutputBtn" title="复制运行结果"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>复制</button></div>
+        <div class="output-content">
+          <div class="output-pane active" id="outputPane"><div class="output-empty" id="outputEmpty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM8 9l3 3-3 3m6 0h3"/></svg><strong>运行结果会显示在这里</strong><span>输入测试数据后，点击右上角「运行代码」</span></div><pre id="stdout" class="output-text" hidden></pre><pre id="stderr" class="output-text error-text" hidden></pre></div>
+          <div class="output-pane" id="diagnosticsPane"><pre id="diagnostics" class="output-text placeholder">尚未产生编译信息。运行程序后，编译器报错和警告会显示在这里。</pre></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-left"><span class="tiny-dot"></span><span id="footerStatus">就绪</span></div>
+    <span>算法学习 · CSP-J</span>
+    <div class="footer-right"><span>编译运行由 Wandbox 提供</span><span>·</span><span>v1.0</span></div>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const API = 'https://wandbox.org/api';
+  const STORAGE = { code: 'algo-workshop-code-v1', stdin: 'algo-workshop-stdin-v1', theme: 'algo-workshop-theme-v1', compiler: 'algo-workshop-compiler-v1', standard: 'algo-workshop-standard-v1' };
+  const starterCode = `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    int a, b;\n    cin >> a >> b;\n    cout << a + b << '\\n';\n\n    return 0;\n}`;
+  const templates = {
+    starter: { label: '基础输入输出', code: starterCode },
+    dfs: { label: 'DFS 深度优先搜索', code: `#include <bits/stdc++.h>\nusing namespace std;\n\nint n;\nvector<vector<int>> g;\nvector<int> vis;\n\nvoid dfs(int u) {\n    vis[u] = 1;\n    // 在这里处理节点 u\n    for (int v : g[u]) {\n        if (!vis[v]) dfs(v);\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    cin >> n;\n    g.resize(n + 1);\n    vis.assign(n + 1, 0);\n    int m; cin >> m;\n    for (int i = 0; i < m; ++i) {\n        int u, v; cin >> u >> v;\n        g[u].push_back(v);\n        g[v].push_back(u);\n    }\n    if (n >= 1) dfs(1);\n    return 0;\n}` },
+    bfs: { label: 'BFS 广度优先搜索', code: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    int n, m;\n    cin >> n >> m;\n    vector<vector<int>> g(n + 1);\n    for (int i = 0; i < m; ++i) {\n        int u, v; cin >> u >> v;\n        g[u].push_back(v);\n        g[v].push_back(u);\n    }\n\n    vector<int> dist(n + 1, -1);\n    queue<int> q;\n    dist[1] = 0;\n    q.push(1);\n    while (!q.empty()) {\n        int u = q.front(); q.pop();\n        for (int v : g[u]) {\n            if (dist[v] == -1) {\n                dist[v] = dist[u] + 1;\n                q.push(v);\n            }\n        }\n    }\n    for (int i = 1; i <= n; ++i) cout << dist[i] << ' ';\n    cout << '\\n';\n    return 0;\n}` },
+    binary: { label: '二分查找', code: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    int n, target;\n    cin >> n >> target;\n    vector<int> a(n);\n    for (int &x : a) cin >> x;\n    sort(a.begin(), a.end());\n\n    auto it = lower_bound(a.begin(), a.end(), target);\n    if (it != a.end() && *it == target)\n        cout << (it - a.begin()) << '\\n';\n    else\n        cout << -1 << '\\n';\n    return 0;\n}` },
+    twopointers: { label: '双指针 / 滑动窗口', code: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    int n; long long limit;\n    cin >> n >> limit;\n    vector<int> a(n);\n    for (int &x : a) cin >> x;\n\n    // 示例：统计和不超过 limit 的连续子数组数量\n    long long ans = 0, sum = 0;\n    int l = 0;\n    for (int r = 0; r < n; ++r) {\n        sum += a[r];\n        while (l <= r && sum > limit) {\n            sum -= a[l++];\n        }\n        ans += r - l + 1;\n    }\n    cout << ans << '\\n';\n    return 0;\n}` },
+    dsu: { label: '并查集', code: `#include <bits/stdc++.h>\nusing namespace std;\n\nstruct DSU {\n    vector<int> fa, sz;\n    DSU(int n) : fa(n + 1), sz(n + 1, 1) {\n        iota(fa.begin(), fa.end(), 0);\n    }\n    int find(int x) {\n        return fa[x] == x ? x : fa[x] = find(fa[x]);\n    }\n    bool unite(int x, int y) {\n        x = find(x); y = find(y);\n        if (x == y) return false;\n        if (sz[x] < sz[y]) swap(x, y);\n        fa[y] = x; sz[x] += sz[y];\n        return true;\n    }\n    bool same(int x, int y) { return find(x) == find(y); }\n};\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    int n, m; cin >> n >> m;\n    DSU dsu(n);\n    while (m--) {\n        int op, x, y; cin >> op >> x >> y;\n        if (op == 1) dsu.unite(x, y);\n        else cout << (dsu.same(x, y) ? "Yes" : "No") << '\\n';\n    }\n    return 0;\n}` }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const codeArea = $('code');
+  const stdinArea = $('stdin');
+  const runBtn = $('runBtn');
+  const runBtnText = $('runBtnText');
+  const runPill = $('runPill');
+  const out = $('stdout');
+  const stderr = $('stderr');
+  const diagnostics = $('diagnostics');
+  const outputEmpty = $('outputEmpty');
+  const app = $('appRoot');
+  let editor = null;
+  let busy = false;
+  let currentStdout = '';
+  let currentCompilerInfo = null;
+  let compilerList = [];
+  let toastTimer;
+
+  function readStorage(key, fallback) {
+    try { const value = localStorage.getItem(key); return value === null ? fallback : value; }
+    catch (_) { return fallback; }
+  }
+  function writeStorage(key, value) {
+    try { localStorage.setItem(key, value); return true; }
+    catch (_) { $('saveState').querySelector('span').textContent = '浏览器未允许本地保存'; return false; }
+  }
+  function getCode() { return editor ? editor.getValue() : codeArea.value; }
+  function setCode(value) {
+    if (editor) editor.setValue(value); else codeArea.value = value;
+    updateCursor(); saveCode();
+  }
+  function getCursor() {
+    if (editor) return editor.getCursor();
+    const text = codeArea.value.slice(0, codeArea.selectionStart);
+    const lines = text.split('\n');
+    return { line: lines.length - 1, ch: lines[lines.length - 1].length };
+  }
+  function updateCursor() {
+    const p = getCursor();
+    $('cursorPos').textContent = `行 ${p.line + 1}，列 ${p.ch + 1}`;
+  }
+  function saveCode() {
+    writeStorage(STORAGE.code, getCode());
+    $('saveState').querySelector('span').textContent = '已自动保存到本机';
+    $('editorStatusText').textContent = '更改已保存';
+  }
+  function saveInput() { writeStorage(STORAGE.stdin, stdinArea.value); }
+  function showToast(message) {
+    const node = $('toast'); node.textContent = message; node.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => node.classList.remove('show'), 2300);
+  }
+  function setRunState(state, label) {
+    runPill.className = `run-pill ${state || ''}`.trim();
+    runPill.textContent = label;
+    $('footerStatus').textContent = label;
+  }
+  function showTab(tab) {
+    document.querySelectorAll('.output-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+    $('outputPane').classList.toggle('active', tab === 'output');
+    $('diagnosticsPane').classList.toggle('active', tab === 'diagnostics');
+  }
+  function setOutput(text, { isError = false, isPlaceholder = false } = {}) {
+    outputEmpty.hidden = true; out.hidden = false; stderr.hidden = true;
+    out.textContent = text;
+    out.className = `output-text${isPlaceholder ? ' placeholder' : ''}${isError ? ' error-text' : ''}`;
+  }
+  function exportCode() {
+    const blob = new Blob([getCode()], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'main.cpp'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showToast('已导出 main.cpp');
+  }
+  function initializeEditor() {
+    const saved = readStorage(STORAGE.code, null);
+    if (saved !== null) codeArea.value = saved;
+    if (window.CodeMirror) {
+      editor = CodeMirror.fromTextArea(codeArea, {
+        mode: 'text/x-c++src', theme: readStorage(STORAGE.theme, 'dark') === 'light' ? 'default' : 'material-darker',
+        lineNumbers: true, indentUnit: 4, tabSize: 4, indentWithTabs: false,
+        matchBrackets: true, autoCloseBrackets: true, lineWrapping: false, viewportMargin: 80,
+        extraKeys: { 'Ctrl-Enter': () => runCode(), 'Cmd-Enter': () => runCode(), 'Ctrl-S': () => exportCode(), 'Cmd-S': () => exportCode(), Tab: (cm) => cm.execCommand('insertSoftTab') }
+      });
+      editor.setSize('100%', '100%');
+      editor.on('change', () => { saveCode(); updateCursor(); });
+      editor.on('cursorActivity', updateCursor);
+      setTimeout(() => editor.refresh(), 30);
+    } else {
+      codeArea.addEventListener('input', () => { saveCode(); updateCursor(); });
+      $('editorStatusText').textContent = '基础编辑模式（语法高亮资源不可用）';
+      showToast('语法高亮加载失败，仍可使用基础编辑模式');
+    }
+    const savedInput = readStorage(STORAGE.stdin, null);
+    if (savedInput !== null) stdinArea.value = savedInput;
+    else stdinArea.value = '2 3\n';
+    stdinArea.addEventListener('input', saveInput);
+    updateCursor();
+  }
+
+  function parseStandardOptions(compiler) {
+    const options = [];
+    (compiler && compiler.switches || []).forEach(sw => {
+      if (Array.isArray(sw.options)) sw.options.forEach(opt => {
+        if (typeof opt === 'string') options.push(opt);
+        else if (opt && opt.name) options.push(opt.name);
+      });
+    });
+    return options;
+  }
+  function chooseStandardName(compiler, desired) {
+    const available = parseStandardOptions(compiler);
+    if (!available.length) return desired;
+    const year = desired.match(/(11|14|17|20)/)?.[1] || '17';
+    const candidates = year === '17' ? ['gnu++17', 'c++17', 'gnu++1z', 'c++1z']
+      : year === '20' ? ['gnu++20', 'c++20', 'gnu++2a', 'c++2a']
+      : year === '14' ? ['gnu++14', 'c++14', 'gnu++1y', 'c++1y']
+      : ['gnu++11', 'c++11', 'gnu++0x', 'c++0x'];
+    return candidates.find(x => available.includes(x)) || desired;
+  }
+  function currentCompiler() {
+    const name = $('compilerSelect').value;
+    return compilerList.find(c => c.name === name) || currentCompilerInfo || { name: name || 'gcc-head', 'display-name': name || 'GCC' };
+  }
+  async function loadCompilers() {
+    try {
+      const response = await fetch(`${API}/list.json`, { cache: 'force-cache' });
+      if (!response.ok) throw new Error('编译器列表请求失败');
+      const data = await response.json();
+      const cpp = data.filter(c => String(c.language || '').toLowerCase().includes('c++') && String(c.name || '').startsWith('gcc-'));
+      const stable = cpp.filter(c => !/head|trunk|snapshot/i.test(c.name) && /\d/.test(c.name));
+      const parseVersion = c => (c.name.match(/gcc-(\d+(?:\.\d+)+)/) || [,'0'])[1].split('.').map(Number);
+      stable.sort((a, b) => {
+        const av = parseVersion(a), bv = parseVersion(b);
+        for (let i = 0; i < Math.max(av.length, bv.length); i++) {
+          const d = (bv[i] || 0) - (av[i] || 0); if (d) return d;
+        }
+        return a.name.localeCompare(b.name);
+      });
+      const list = stable.length ? stable : cpp;
+      if (!list.length) throw new Error('没有找到可用的 GCC 编译器');
+      compilerList = list;
+      const select = $('compilerSelect'); select.innerHTML = '';
+      list.forEach(c => {
+        const opt = document.createElement('option'); opt.value = c.name; opt.textContent = c['display-name'] || c.name; opt.title = `${c.name} · ${c.version || ''}`; select.appendChild(opt);
+      });
+      const previous = readStorage(STORAGE.compiler, '');
+      select.value = list.some(c => c.name === previous) ? previous : list[0].name;
+      currentCompilerInfo = currentCompiler();
+      $('apiState').textContent = '编译服务已连接';
+      select.addEventListener('change', () => {
+        currentCompilerInfo = currentCompiler();
+        writeStorage(STORAGE.compiler, select.value);
+        $('outputCompiler').textContent = `${select.options[select.selectedIndex].textContent} · ${$('standardSelect').selectedOptions[0].textContent}`;
+      });
+      return true;
+    } catch (err) {
+      $('apiState').textContent = '等待编译服务';
+      $('compilerSelect').innerHTML = '<option value="gcc-head">GCC HEAD（默认）</option>';
+      currentCompilerInfo = { name: 'gcc-head', 'display-name': 'GCC HEAD' };
+      $('footerStatus').textContent = '编译器列表暂不可用，仍可尝试运行';
+      return false;
+    }
+  }
+
+  async function runCode() {
+    if (busy) return;
+    const code = getCode();
+    if (!code.trim()) { showToast('请先输入 C++ 代码'); return; }
+    busy = true; runBtn.disabled = true; runBtnText.textContent = '编译中…';
+    $('runIcon').innerHTML = '<path d="M7 7h10v10H7z"/>';
+    setRunState('running', '正在编译');
+    $('outputTime').textContent = '正在连接编译服务…';
+    $('outputCompiler').textContent = `${$('compilerSelect').selectedOptions[0]?.textContent || 'GCC'} · ${$('standardSelect').selectedOptions[0].textContent}`;
+    setOutput('正在提交代码并等待编译结果…', { isPlaceholder: true });
+    $('stderr').hidden = true;
+    $('diagnostics').textContent = '正在编译，请稍候…'; $('diagnostics').className = 'output-text placeholder';
+    showTab('output');
+    const start = performance.now();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 40000);
+    try {
+      const compiler = currentCompiler();
+      const standard = $('standardSelect').value;
+      const standardOption = chooseStandardName(compiler, standard);
+      const payload = {
+        compiler: compiler.name || 'gcc-head',
+        code,
+        stdin: stdinArea.value,
+        options: `warning,${standardOption}`,
+        save: false
+      };
+      const response = await fetch(`${API}/compile.json`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload), signal: controller.signal
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || `编译服务返回 HTTP ${response.status}`);
+      const elapsed = Math.round(performance.now() - start);
+      $('outputTime').textContent = `用时 ${elapsed} ms`;
+      const compileErrors = [data.compiler_error, data.compiler_message, data.compiler_output].filter(Boolean).join('\n').trim();
+      const programOut = String(data.program_output ?? data.program_message ?? '');
+      const programErr = String(data.program_error ?? '');
+      const statusOk = String(data.status) === '0' && !data.signal;
+      currentStdout = programOut;
+      if (programOut.trim()) setOutput(programOut);
+      else setOutput('（程序运行结束，没有标准输出）', { isPlaceholder: true });
+      if (programErr.trim()) {
+        stderr.hidden = false; stderr.textContent = `标准错误：\n${programErr}`;
+        stderr.style.marginTop = '14px';
+      }
+      if (compileErrors) {
+        diagnostics.textContent = compileErrors;
+        diagnostics.className = `output-text${statusOk ? ' placeholder' : ' error-text'}`;
+      } else if (programErr) {
+        diagnostics.textContent = programErr; diagnostics.className = 'output-text error-text';
+      } else {
+        diagnostics.textContent = statusOk ? '编译成功，没有编译警告或错误。' : `程序未正常结束。退出状态：${data.status ?? '未知'}${data.signal ? `\n信号：${data.signal}` : ''}`;
+        diagnostics.className = `output-text${statusOk ? ' placeholder' : ' error-text'}`;
+      }
+      if (statusOk) {
+        setRunState('success', '运行成功');
+        $('footerStatus').textContent = '运行完成';
+      } else {
+        setRunState('error', '运行失败');
+        $('footerStatus').textContent = '编译或运行失败，请查看编译信息';
+        if (!programOut.trim()) showTab('diagnostics');
+      }
+    } catch (err) {
+      const elapsed = Math.round(performance.now() - start);
+      $('outputTime').textContent = `用时 ${elapsed} ms`;
+      const message = err.name === 'AbortError'
+        ? '请求超时。编译服务可能繁忙，请稍后重试。'
+        : `连接编译服务失败：${err.message || '网络错误'}\n\n请确认当前网络可以访问 wandbox.org，或稍后再试。`;
+      currentStdout = '';
+      setOutput(message, { isError: true });
+      diagnostics.textContent = message; diagnostics.className = 'output-text error-text';
+      setRunState('error', '连接失败'); showTab('diagnostics');
+    } finally {
+      clearTimeout(timeout); busy = false; runBtn.disabled = false; runBtnText.textContent = '运行代码';
+      $('runIcon').innerHTML = '<path d="M7 4.8c0-.8.9-1.3 1.6-.9l11 7.1a1.2 1.2 0 0 1 0 2L8.6 20.1c-.7.4-1.6-.1-1.6-.9V4.8Z"/>';
+    }
+  }
+
+  $('runBtn').addEventListener('click', runCode);
+  $('downloadBtn').addEventListener('click', exportCode);
+  $('clearInputBtn').addEventListener('click', () => { stdinArea.value = ''; saveInput(); stdinArea.focus(); showToast('已清空标准输入'); });
+  $('copyOutputBtn').addEventListener('click', async () => {
+    const text = currentStdout || out.textContent || '';
+    try { await navigator.clipboard.writeText(text); showToast('运行结果已复制'); }
+    catch (_) { showToast('浏览器不允许自动复制，请选中结果后复制'); }
+  });
+  document.querySelectorAll('.output-tab').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+  $('themeBtn').addEventListener('click', () => {
+    const light = !app.classList.contains('light-mode');
+    app.classList.toggle('light-mode', light);
+    writeStorage(STORAGE.theme, light ? 'light' : 'dark');
+    if (editor) editor.setOption('theme', light ? 'default' : 'material-darker');
+    if (editor) setTimeout(() => editor.refresh(), 20);
+  });
+  $('templateRailBtn').addEventListener('click', () => { $('standardSelect').focus(); $('templateSelect')?.focus(); showToast('可从编辑器工具栏选择代码模板'); });
+  $('inputRailBtn').addEventListener('click', () => stdinArea.focus());
+  $('helpBtn').addEventListener('click', () => showToast('快捷键：Ctrl+Enter 运行；Ctrl+S 导出代码。代码和输入保存在当前浏览器。'));
+  stdinArea.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const start = stdinArea.selectionStart, end = stdinArea.selectionEnd; stdinArea.setRangeText('    ', start, end, 'end'); saveInput(); } });
+  codeArea.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); } if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); exportCode(); } });
+  $('standardSelect').addEventListener('change', () => { writeStorage(STORAGE.standard, $('standardSelect').value); $('outputCompiler').textContent = `${$('compilerSelect').selectedOptions[0]?.textContent || 'GCC'} · ${$('standardSelect').selectedOptions[0].textContent}`; });
+  const previousStandard = readStorage(STORAGE.standard, 'gnu++17');
+  if ([...$('standardSelect').options].some(o => o.value === previousStandard)) $('standardSelect').value = previousStandard;
+  if (readStorage(STORAGE.theme, 'dark') === 'light') app.classList.add('light-mode');
+
+  // Insert a template picker in the editor toolbar without requiring any build step.
+  const templateSelect = document.createElement('select');
+  templateSelect.id = 'templateSelect'; templateSelect.setAttribute('aria-label', '选择代码模板');
+  templateSelect.style.cssText = 'appearance:none;max-width:145px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;color:#d9e3f1;background:#1b2637;font-size:11px;margin-left:3px;';
+  const defaultTemplate = document.createElement('option'); defaultTemplate.value = ''; defaultTemplate.textContent = '插入代码模板…'; templateSelect.appendChild(defaultTemplate);
+  Object.entries(templates).forEach(([key, item]) => { const opt = document.createElement('option'); opt.value = key; opt.textContent = item.label; templateSelect.appendChild(opt); });
+  $('compilerSelect').parentElement.insertAdjacentElement('afterend', templateSelect);
+  templateSelect.addEventListener('change', () => {
+    const item = templates[templateSelect.value];
+    if (!item) return;
+    setCode(item.code); templateSelect.value = ''; showToast(`已载入模板：${item.label}`);
+    if (editor) editor.focus(); else codeArea.focus();
+  });
+
+  initializeEditor();
+  $('outputCompiler').textContent = `GCC · ${$('standardSelect').selectedOptions[0].textContent}`;
+  loadCompilers().then(() => {
+    const c = currentCompiler();
+    $('outputCompiler').textContent = `${$('compilerSelect').selectedOptions[0]?.textContent || 'GCC'} · ${$('standardSelect').selectedOptions[0].textContent}`;
+    $('apiState').textContent = '编译服务已连接';
+  });
+  // Make sure browser keyboard shortcuts also work if the editor library was blocked.
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { if (!editor) { e.preventDefault(); runCode(); } }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { if (!editor) { e.preventDefault(); exportCode(); } }
+  });
+})();
+</script>
+</body>
+</html>
